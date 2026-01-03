@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 from google import genai
+import re
 
 # -------------------------------
 # Page configuration
@@ -54,13 +55,19 @@ The JSON MUST match this schema exactly:
 # -------------------------------
 
 def extract_json(text: str) -> str:
-    text = text.strip()
+    """
+    Extracts a JSON object from LLM output, even if wrapped in Markdown fences.
+    """
+    # Remove markdown code fences (```json or ```)
+    text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE)
+    text = text.replace("```", "")
 
-    if text.startswith("```"):
-        # Remove first and last code fence
-        text = text.split("```")[1]
+    # Extract JSON object
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if not match:
+        raise ValueError("No JSON object found")
 
-    return text.strip()
+    return match.group(0)
 # -------------------------------
 # Action
 # -------------------------------
@@ -72,14 +79,15 @@ if st.button("Analyze Logs") and log_input.strip():
                 contents=PROMPT + "\n\nLOGS:\n" + log_input
             )
 
-            raw_output = response.text.strip()
-            clean_json = extract_json(raw_output)
+            raw_output = response.text
 
             try:
+                clean_json = extract_json(raw_output)
                 result = json.loads(clean_json)
+
                 st.subheader("🧾 Analysis Result")
                 st.json(result)
-            except json.JSONDecodeError:
+            except Exception:
                 st.error("The model did not return valid JSON.")
                 st.subheader("🔎 Raw Model Output")
                 st.code(raw_output)
