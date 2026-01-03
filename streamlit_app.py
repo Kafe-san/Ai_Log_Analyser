@@ -1,11 +1,27 @@
 import streamlit as st
+from openai import OpenAI
 
 st.set_page_config(page_title="AI Log Analyzer", layout="centered")
-
 st.title("🔍 AI Log Analyzer")
-st.write("Paste logs below. This is a placeholder app to verify deployment.")
 
-log_input = st.text_area("Log input", height=250)
+# Initialize OpenAI client using Streamlit secrets
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-if st.button("Analyze"):
-    st.write("Analysis will appear here.")
+st.write("This step verifies OpenAI connectivity.")
+
+if st.button("Test OpenAI connection"):
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a test assistant."},
+                {"role": "user", "content": "Say 'connection successful'."}
+            ],
+            temperature=0
+        )
+
+        st.success(response.choices[0].message.content)
+
+    except Exception as e:
+        st.error("OpenAI call failed")
+        st.exception(e)
