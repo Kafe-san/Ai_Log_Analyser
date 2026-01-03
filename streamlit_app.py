@@ -7,7 +7,7 @@ st.title("🔍 AI Log Analyzer")
 
 # Configure Gemini
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-1.0-pro")
 
 st.write("Paste system or application logs below.")
 
