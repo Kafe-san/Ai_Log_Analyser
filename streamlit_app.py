@@ -49,7 +49,18 @@ The JSON MUST match this schema exactly:
   "reliability_risks": ["string"]
 }
 """
+# -------------------------------
+# Removes Markdown code
+# -------------------------------
 
+def extract_json(text: str) -> str:
+    text = text.strip()
+
+    if text.startswith("```"):
+        # Remove first and last code fence
+        text = text.split("```")[1]
+
+    return text.strip()
 # -------------------------------
 # Action
 # -------------------------------
@@ -62,13 +73,12 @@ if st.button("Analyze Logs") and log_input.strip():
             )
 
             raw_output = response.text.strip()
+            clean_json = extract_json(raw_output)
 
             try:
-                result = json.loads(raw_output)
-
+                result = json.loads(clean_json)
                 st.subheader("🧾 Analysis Result")
                 st.json(result)
-
             except json.JSONDecodeError:
                 st.error("The model did not return valid JSON.")
                 st.subheader("🔎 Raw Model Output")
