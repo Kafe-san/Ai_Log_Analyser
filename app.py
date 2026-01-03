@@ -1,27 +1,41 @@
 import streamlit as st
-from openai import OpenAI
+import google.generativeai as genai
+import json
 
 st.set_page_config(page_title="AI Log Analyzer", layout="centered")
 st.title("🔍 AI Log Analyzer")
 
-# Initialize OpenAI client using Streamlit secrets
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# Configure Gemini
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-st.write("This step verifies OpenAI connectivity.")
+st.write("Paste system or application logs below.")
 
-if st.button("Test OpenAI connection"):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a test assistant."},
-                {"role": "user", "content": "Say 'connection successful'."}
-            ],
-            temperature=0
-        )
+log_input = st.text_area("Log input", height=250)
 
-        st.success(response.choices[0].message.content)
+SYSTEM_PROMPT = """
+You are an expert DevOps and Software Engineer.
+Analyze the provided logs and return a structured JSON response with:
+- error_summary
+- probable_root_causes (list)
+- suggested_fixes (list)
+- severity_level (Low, Medium, High, Critical)
+- reliability_risks (list)
 
-    except Exception as e:
-        st.error("OpenAI call failed")
-        st.exception(e)
+Respond ONLY with valid JSON.
+"""
+
+if st.button("Analyze Logs") and log_input.strip():
+    with st.spinner("Analyzing logs..."):
+        try:
+            response = model.generate_content(
+                SYSTEM_PROMPT + "\n\nLOGS:\n" + log_input
+            )
+
+            result = json.loads(response.text)
+            st.subheader("🧾 Analysis Result")
+            st.json(result)
+
+        except Exception as e:
+            st.error("Analysis failed.")
+            st.exception(e)
